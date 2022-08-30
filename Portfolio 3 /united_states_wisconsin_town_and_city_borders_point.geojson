@@ -1,0 +1,18 @@
+{
+"type": "FeatureCollection",
+"name": "united_states_wisconsin_town_and_city_borders_point",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "gid": 151497172, "capital": null, "ele": "240", "name": "Eau Claire", "place": "city", "population": "61324" }, "geometry": { "type": "Point", "coordinates": [ -91.498494087263325, 44.811348995039346 ] } },
+{ "type": "Feature", "properties": { "gid": 151679353, "capital": null, "ele": "204", "name": "La Crosse", "place": "city", "population": "51567" }, "geometry": { "type": "Point", "coordinates": [ -91.239542887299365, 43.801405295095044 ] } },
+{ "type": "Feature", "properties": { "gid": 29941752, "capital": "4", "ele": null, "name": "Madison", "place": "city", "population": "243344" }, "geometry": { "type": "Point", "coordinates": [ -89.383761287557675, 43.074760995137538 ] } },
+{ "type": "Feature", "properties": { "gid": 29941173, "capital": null, "ele": null, "name": "Janesville", "place": "city", "population": "63575" }, "geometry": { "type": "Point", "coordinates": [ -89.022679287607914, 42.682976495161277 ] } },
+{ "type": "Feature", "properties": { "gid": 153667213, "capital": null, "ele": "184", "name": "Kenosha", "place": "city", "population": "100150" }, "geometry": { "type": "Point", "coordinates": [ -87.82122628777519, 42.584677295167332 ] } },
+{ "type": "Feature", "properties": { "gid": 873099231, "capital": null, "ele": "188", "name": "Milwaukee", "place": "city", "population": "605013" }, "geometry": { "type": "Point", "coordinates": [ -87.922496987761107, 43.034993095139917 ] } },
+{ "type": "Feature", "properties": { "gid": 153616558, "capital": null, "ele": "368", "name": "Wausau", "place": "city", "population": "38435" }, "geometry": { "type": "Point", "coordinates": [ -89.629823887523443, 44.959601695031509 ] } },
+{ "type": "Feature", "properties": { "gid": 1948134545, "capital": null, "ele": null, "name": "Oshkosh", "place": "city", "population": "66083" }, "geometry": { "type": "Point", "coordinates": [ -88.54085738767499, 44.020691895082614 ] } },
+{ "type": "Feature", "properties": { "gid": 153750055, "capital": null, "ele": "193", "name": "Sheboygan", "place": "city", "population": "49288" }, "geometry": { "type": "Point", "coordinates": [ -87.71452998779003, 43.750828395097948 ] } },
+{ "type": "Feature", "properties": { "gid": 19794768, "capital": null, "ele": null, "name": "Green Bay", "place": "city", "population": "101412" }, "geometry": { "type": "Point", "coordinates": [ -88.012579387748559, 44.512637895055413 ] } }
+
+]
+}

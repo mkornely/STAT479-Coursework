@@ -1,0 +1,194 @@
+---
+title: "M4-Final"
+author: "Group 5"
+date: "5/6/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(lubridate)
+library(ggforce)
+library(splitstackshape)
+library(ggrepel)
+library(ggridges)
+library(scales)
+
+youtube <- read_csv("US_youtube_trending_data.csv")
+```
+
+```{r}
+# replace category Ids with actual category name
+
+youtube["categoryId"] <- replace(youtube$categoryId, youtube$categoryId == 1, "Film and Animation")
+youtube["categoryId"] <- replace(youtube$categoryId, youtube$categoryId == 2, "Autos and Vehicles")
+youtube["categoryId"] <- replace(youtube$categoryId, youtube$categoryId == 10, "Music")
+youtube["categoryId"] <- replace(youtube$categoryId, youtube$categoryId == 15, "Pets and Animals")
+youtube["categoryId"] <- replace(youtube$categoryId, youtube$categoryId == 17, "Sports")
+youtube["categoryId"] <- replace(youtube$categoryId, youtube$categoryId == 18, "Short Movies")
+youtube["categoryId"] <- replace(youtube$categoryId, youtube$categoryId == 19, "Travel & Events")
+youtube["categoryId"] <- replace(youtube$categoryId, youtube$categoryId == 20, "Gaming")
+youtube["categoryId"] <- replace(youtube$categoryId, youtube$categoryId == 21, "VideoBlogging")
+youtube["categoryId"] <- replace(youtube$categoryId, youtube$categoryId == 22, "People & Blogs")
+youtube["categoryId"] <- replace(youtube$categoryId, youtube$categoryId == 23, "Comedy")
+youtube["categoryId"] <- replace(youtube$categoryId, youtube$categoryId == 24, "Entertainment")
+youtube["categoryId"] <- replace(youtube$categoryId, youtube$categoryId == 25, "News & Politics")
+youtube["categoryId"] <- replace(youtube$categoryId, youtube$categoryId == 26, "Howto & Style")
+youtube["categoryId"] <- replace(youtube$categoryId, youtube$categoryId == 28, "Science & Technology")
+youtube["categoryId"] <- replace(youtube$categoryId, youtube$categoryId == 27, "Education")
+youtube["categoryId"] <- replace(youtube$categoryId, youtube$categoryId == 29, "Nonprofits & Activism")
+youtube["categoryId"] <- replace(youtube$categoryId, youtube$categoryId == 30, "Movies")
+youtube["categoryId"] <- replace(youtube$categoryId, youtube$categoryId == 31, "Animation & Anime")
+youtube["categoryId"] <- replace(youtube$categoryId, youtube$categoryId == 32, "Action/Adventure")
+youtube["categoryId"] <- replace(youtube$categoryId, youtube$categoryId == 33, "Classics")
+youtube["categoryId"] <- replace(youtube$categoryId, youtube$categoryId == 34, "Comedy")
+youtube["categoryId"] <- replace(youtube$categoryId, youtube$categoryId == 35, "Documentary")
+youtube["categoryId"] <- replace(youtube$categoryId, youtube$categoryId == 36, "Drama")
+youtube["categoryId"] <- replace(youtube$categoryId, youtube$categoryId == 37, "Family")
+youtube["categoryId"] <- replace(youtube$categoryId, youtube$categoryId == 38, "Foreign")
+youtube["categoryId"] <- replace(youtube$categoryId, youtube$categoryId == 39, "Horror")
+youtube["categoryId"] <- replace(youtube$categoryId, youtube$categoryId == 40, "Sci-Fi/Fantasy")
+youtube["categoryId"] <- replace(youtube$categoryId, youtube$categoryId == 41, "Thriller")
+youtube["categoryId"] <- replace(youtube$categoryId, youtube$categoryId == 42, "Shorts")
+youtube["categoryId"] <- replace(youtube$categoryId, youtube$categoryId == 43, "Shows")
+youtube["categoryId"] <- replace(youtube$categoryId, youtube$categoryId == 44, "Trailers")
+
+# drop NA
+
+youtube <- youtube %>% drop_na()
+```
+
+```{r}
+youtube_ld <- youtube %>%
+  filter(comments_disabled == FALSE & ratings_disabled == FALSE) %>%
+  select(view_count, likes, dislikes, categoryId) %>%
+  mutate(like_pct = likes / (likes + dislikes)) %>%
+  filter(dislikes != 0)
+
+ggplot(youtube_ld) +
+  geom_histogram(aes(like_pct, fill = categoryId), show.legend = FALSE) +
+  scale_x_continuous(limits = c(0.85, 1), oob = rescale_none) +
+  facet_wrap(~categoryId, scales = "free_y") +
+  theme(
+    axis.ticks.y = element_blank(),
+    strip.background = element_blank()
+  ) +
+  labs(
+    title = "Ratio of Likes to Total Ratings",
+    subtitle = "For Trending Videos Since August 2020",
+    x = "Percent Likes",
+    y = "Number of Videos"
+  )
+```
+
+```{r}
+youtube <- youtube %>% mutate(views_likes = view_count / likes)
+
+youtube %>% ggplot(aes(log(views_likes))) +
+  geom_density(aes(fill = factor(categoryId)), alpha = 0.8) +
+  labs(
+    title = "Views to Likes Grouped by Category",
+    subtitle = "Density Plot",
+    x = "Views to Likes (log)",
+    y = "Density",
+    fill = "Category"
+  )
+```
+
+```{r}
+# Analyzing the 25 most frequently used tags in trending videos
+
+top.tags.df <- youtube %>%
+  select(video_id, tags, categoryId) %>%
+  cSplit("tags", "|", direction = "long") %>% 
+  count(tags) %>%
+  arrange(-n) %>% 
+  tail(-1) %>%
+  head(25)
+
+ggplot(top.tags.df, aes(x=reorder(tags, n), y=n, fill=tags, label = n)) +
+  geom_bar(width = 0.75,  stat = "identity", colour = "black", size = .225) +
+  geom_text(size = 2.5, position = position_stack(vjust = 1.1), angle = 0) +
+  xlab("") + ylab("") +
+  ggtitle("Tag Frequency") +
+  theme(legend.position = "none",
+        axis.ticks.x = element_blank()) +
+  labs(x = "Tags Used", y = "Number of Videos\n on Trending Page") +
+  labs (title = "Most Frequently Used Tags in Trending Videos ")+
+  theme(axis.text.x = element_text(angle = 45))
+```
+
+```{r}
+# Analyzing the total trending videos for each category
+
+youtube %>%
+  group_by(categoryId) %>%
+  summarise(n = n()) %>%
+  ggplot(aes(x = reorder(categoryId, -n), y = n, fill = categoryId)) +
+  geom_col() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1), legend.position = "none") +
+  xlab("Video Category") +
+  ylab("Trending Videos in Each Category") +
+  labs(title = "Number of Videos on Trending Page per Category")
+```
+
+```{r}
+# Analyzing Views for Each Category
+
+jitter <- position_jitter(height = 6)
+ggplot(youtube, aes(x = reorder(categoryId, view_count), y = view_count, color = categoryId)) +
+  geom_point(position = jitter, alpha = 0.4) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  labs(
+    title = "Total Views per Category",
+    subtitle = "By Video",
+    x = "Video Category",
+    y = "Total Views"
+  )
+```
+
+```{r}
+# Average view per category
+
+youtube %>%
+  group_by(categoryId) %>%
+  summarise(avgviews = mean(view_count)) %>%
+  ggplot(aes(x = reorder(categoryId, avgviews), y = avgviews, fill = categoryId)) +
+  geom_col() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  labs(
+    title = "Average Views per Category",
+    x = "Video Category",
+    y = "Average Views",
+    fill = "Category"
+  ) 
+```
+
+```{r}
+# Analyzing Timing of the posted Video
+
+youtube %>%
+  mutate(hour = hour(publishedAt), year = year(publishedAt)) %>%
+  ggplot(aes(hour, y = categoryId, fill = categoryId)) +
+  geom_density_ridges() +
+  xlab("Hour of the Day") +
+  facet_wrap(~year) +
+  theme(legend.position = "none") +
+  ylab("Video Category")
+```
+
+```{r}
+# Analyzing Timing of the posted Video
+
+youtube %>%
+  mutate(hour = hour(publishedAt)) %>%
+  group_by(categoryId) %>%
+  summarise(avg_hour = mean(hour)) %>%
+  ggplot(aes(reorder(categoryId,desc(avg_hour)), avg_hour, color = categoryId)) +
+  geom_point() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  xlab("Category") +
+  ylab("Average Hour Published") +
+  labs(title = "Average Hour of Video Published", subtitle = "By Category")
+```

@@ -1,0 +1,110 @@
+---
+title: "Portfolio 3- Vaccine Hesitancy in Wisconsin "
+author: "Michael Kornely"
+date: "4/8/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+For this assignment, I focused on spatial data in order to take a look at vaccine hesitancy in Wisconsin. Reading this article(https://pubmed.ncbi.nlm.nih.gov/34932583/), I found that there were several factors that prevented someone from being vaccinated including race, political leanings, income, and education level. I sought to use a spatial visualization of Wisconsin to see if these common factors were true in Wisconsin, a swing state that includes a variety of urban and rural areas. To summarize, I wanted to explore "What are some possible causes for individuals to not be vaccinated?"
+
+
+Initially, I was unaware of what interactive options there were for spatial graphs, so I made the visualization below to color counties by the amount that they voted for each candidate in the 2020 election.Below is that initial visualization, with larger cities included on the map as a reference.  
+```{r,message=FALSE, warning=FALSE, include=FALSE}
+library(tidyverse)
+library(sf)
+library(leaflet)
+library(glue)
+
+county_data<-read_csv("https://raw.githubusercontent.com/kayshavprakash/censusdatabycounty/main/county_complete.csv")
+election_data<-read_csv("https://raw.githubusercontent.com/tonmcg/US_County_Level_Election_Results_08-20/master/2020_US_County_Level_Presidential_Results.csv")%>%filter(state_name=="Wisconsin")%>%mutate(per_gop=per_gop*100)%>%mutate(per_dem=per_dem*100)
+
+covid_data<-read_csv("COVID-19_Vaccination_Data_by_County.csv")
+county_data<-county_data%>%filter(state=="Wisconsin")%>%select(name, contains("2019"))
+```
+
+
+```{r,message=FALSE, warning=FALSE, include=FALSE}
+wisconsin<-read_sf("https://raw.githubusercontent.com/cs320-wisc/f21/main/p6/counties.geojson")
+
+wisconsin_joined<-wisconsin%>%full_join(election_data,by = c("NAME" = "county_name"))%>%mutate(per_point_diff=per_point_diff*-100)%>%full_join(covid_data,by = c("NAME" = "NAME"))%>%full_join(county_data,by=c("NAME"="name"))
+cities<-read_sf("united_states_wisconsin_town_and_city_borders_point.geojson")
+colleges<-read_sf("Colleges_and_Universities.geojson")
+
+colleges<-colleges%>%filter(STATE=="WI")%>% filter(grepl("UNIVERSITY OF WISCONSIN",NAME))%>%filter(NAME!="UNIVERSITY OF WISCONSIN COLLEGES FLEX")%>%filter(NAME!="UNIVERSITY OF WISCONSIN-SYSTEM ADMINISTRATION")
+```
+
+
+
+
+```{r}
+ggplot()+geom_sf(data=wisconsin_joined,aes(fill=per_point_diff))+geom_sf_text(data=cities,aes(label=name),color="white",nudge_y = 0.2)+geom_sf(data=cities)+  scale_fill_gradient2(low = "red", mid = scales::muted("purple"),
+                                high = "blue", breaks = c(-25, 0, 25, 50, 75))
+```
+
+
+Next, I used the Leaflet library to create an interactive visualization. While I wanted to use Shiny to be able to choose whether to allow users to select colors and whether college towns or essential cities were shown on the map, I found it difficult to use the two in conjuction. 
+
+Below is three visualizations: 
+
+1) Counties colored by the turnout of the 2020 election with Large Cities labeled. 
+
+2) Counties colored by the percentage of 1st Dose of Covid Vaccine with UW System Universities labeled. 
+
+3) Counties colored by the percentage of Full Covid Vaccine Dose with Large Cities labeled. 
+
+Clicking on each county pulls up essential information about the county that I found connection to determine if these factors have an impact on vaccine rate. 
+
+
+```{r}
+
+
+p_popup <- glue("<strong>{wisconsin_joined$NAME}</strong><br />
+                    Percent GOP: {scales::comma(wisconsin_joined$per_gop,accuracy=1)}%  Percent DEM: {scales::comma(wisconsin_joined$per_dem,accuracy=1)} %<br />
+                    Percent 1st Dose: {wisconsin_joined$DOSE_ONE_PERC}%  Percent Both Doses: {wisconsin_joined$DOSE_COMPLETE_PERC}%<br />
+                    Age over 65: {wisconsin_joined$age_over_65_2019}% <br />
+                    Age under 5: {wisconsin_joined$age_under_5_2019}% <br />
+                    Median Age: {wisconsin_joined$median_age_2019} <br />
+                    African-American: {wisconsin_joined$black_2019}% <br />
+                    Bachelors Degree: {wisconsin_joined$bachelors_2019}%  High School Diploma: {wisconsin_joined$hs_grad_2019}% <br />
+                    Uninsured: {wisconsin_joined$uninsured_2019}% <br />
+                    Unemployed: {wisconsin_joined$unemployment_rate_2019}% <br />")  %>%     lapply(htmltools::HTML)
+
+ pal <- colorNumeric(
+  palette = "RdBu",
+  domain = wisconsin_joined$per_point_diff)
+
+ pal2 <- colorNumeric(
+  palette = "Greens",
+  domain = wisconsin_joined$DOSE_ONE_PERC)
+
+ 
+ pal3 <- colorNumeric(
+  palette = "Greens",
+  domain = wisconsin_joined$DOSE_COMPLETE_PERC)
+ 
+ 
+ 
+leaflet(wisconsin_joined) %>%addPolygons(
+  stroke = FALSE, fillOpacity = 0.8, smoothFactor = 0.5, popup = p_popup,fillColor=~pal(per_point_diff)
+) %>%addMarkers(data=cities,popup=cities$name)
+
+leaflet(wisconsin) %>%addPolygons(
+    stroke = FALSE, fillOpacity = 0.8, smoothFactor = 0.5, popup = p_popup,fillColor=~pal2(wisconsin_joined$DOSE_ONE_PERC) ) %>%addMarkers(data=colleges,popup=colleges$NAME)
+
+
+leaflet(wisconsin) %>%addPolygons(
+    stroke = FALSE, fillOpacity = 0.8, smoothFactor = 0.5, popup = p_popup,fillColor=~pal3(wisconsin_joined$DOSE_COMPLETE_PERC) ) %>%addMarkers(data=cities,popup=cities$name)
+```
+
+
+
+With some initial exploration, it was clear that many of these factors have some possible correlation to poor vaccination rates. For example, Price County voting overwhelming Republican with very few holding a degree. But also, looking at Menominee County (which is predominately a Native American reservation), there are high uninsured rates, but impressive numbers when it comes to being vaccinated. When looking at these visualizations, I could not reasonably conclude that African Americans are not getting vaccinated due to perceived racism in health care as Milwaukee county was the only one with a significant African American population, and they have moderate to good vaccination rates. 
+
+
+These visualizations were very time consuming and required much data preparation in order to get them to work correctly. Much of the data had to be manually changed as the several joining of datasets as well as the several geojson files made this a difficult process. Many of my steps are outlined above as creating the Leaflet was a new experience as it wasn't covered explicitly in lecture. 
+
